@@ -1,0 +1,18 @@
+# IDE
+/.claude
+/.idea
+/.vscode
+*.swp
+*.swo
+
+# Binaries
+gyproc
+gyproc.exe
+
+# Go
+/vendor
+/tmp
+
+# OS
+.DS_Store
+Thumbs.db
