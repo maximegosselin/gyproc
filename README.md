@@ -122,3 +122,13 @@ $ gyproc --file commands.txt --limit 2
 {"seq":3,"event":"exit","pid":5679,"code":0,"time":"2026-01-15T10:00:02.000000000Z"}
 {"seq":1,"event":"exit","pid":5678,"code":0,"time":"2026-01-15T10:00:05.000000000Z"}
 ```
+
+## How it works
+
+**1. Input reading** — `input/lines.go` reads lines one by one via a `bufio.Scanner` in a goroutine and sends them on a Go channel. Empty lines are skipped; lines starting with `#` are filtered out by the manager.
+
+**2. Acknowledgement phase** — The manager reads all commands from the channel before starting any process. Each command is assigned a sequential `seq` identifier and immediately emits an `ack` event. This is why all `ack` events appear before any `run` event in the output.
+
+**3. Worker pool** — A buffered channel with capacity equal to `--limit` acts as a semaphore. That many goroutines (workers) pull from the channel, each blocking on `proc.Run()` until the process finishes. At most `--limit` commands run simultaneously. If no limit is set, all commands run at once.
+
+**4. Process execution and JSON streaming** — For each process, stdout and stderr are wired to a `processOutputWriter` that emits an `out` event on every `Write()` call made by the child process. Once the process finishes, an `exit` event is emitted with the exit code, or a `fail` event if the process could not be started.
